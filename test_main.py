@@ -1,28 +1,33 @@
 # test_main.py
 import os
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from datetime import datetime
 
-import main  # main.py をインポート
+import main  # リファクタリング済みの main.py をインポート
+
 
 @pytest.fixture
 def mock_env(monkeypatch):
-    # 環境変数設定（OPENAI_API_KEY等）
+    """
+    テスト用の環境変数を設定する Pytest fixture。
+    例: OPENAI_API_KEY をダミーで設定。
+    """
     monkeypatch.setenv("OPENAI_API_KEY", "sk-fake-key")
 
-#-------------------------------------------------
-# fetch_documents のテスト例
-#-------------------------------------------------
+
 @patch("main.logger")
 def test_fetch_documents(mock_logger, mock_env):
-    # Drive API の mock
+    """
+    fetch_documents() が Drive API 結果を正しくフィルタリングするか確認。
+    """
     drive_service = MagicMock()
+    # Drive API のモック返り値
     drive_service.files().list().execute.return_value = {
         "files": [
-            {"id": "doc1", "name": "2024年01月02日水曜日"},
-            {"id": "doc2", "name": "2024年01月03日木曜日"},
-            {"id": "doc3", "name": "invalid_file_name"}
+            {"id": "doc1", "name": "2024年01月02日木曜日"},
+            {"id": "doc2", "name": "2024年01月03日金曜日"},
+            {"id": "doc3", "name": "invalid_filename"}
         ]
     }
 
@@ -30,124 +35,194 @@ def test_fetch_documents(mock_logger, mock_env):
     end_date = datetime(2024, 1, 3)
 
     result = main.fetch_documents(drive_service, "folder123", start_date, end_date)
-    assert len(result) == 2  # 2つだけマッチする
+
+    # doc1, doc2 がマッチし、doc3 はマッチしない
+    assert len(result) == 2
     assert result[0]["id"] == "doc1"
     assert result[1]["id"] == "doc2"
 
-    # ログが呼ばれているか確認
+    # ログ出力の確認
     mock_logger.info.assert_any_call("Fetching documents from folder: folder123")
     mock_logger.info.assert_any_call("Found 2 documents in the date range.")
 
-#-------------------------------------------------
-# extract_content のテスト例
-#-------------------------------------------------
+
 @patch("main.logger")
 def test_extract_content(mock_logger, mock_env):
+    """
+    extract_content() が Docs API 結果からテキスト要素を正しく取得するか確認。
+    """
     docs_service = MagicMock()
     docs_service.documents().get().execute.return_value = {
         "body": {
             "content": [
-                {"paragraph": {"elements": [
-                    {"textRun": {"content": "Hello "}},
-                    {"textRun": {"content": "World"}}
-                ]}},
-                {"paragraph": {"elements": [
-                    {"textRun": {"content": "\nAnother line"}}
-                ]}}
+                {
+                    "paragraph": {
+                        "elements": [
+                            {"textRun": {"content": "Hello "}},
+                            {"textRun": {"content": "World"}}
+                        ]
+                    }
+                },
+                {
+                    "paragraph": {
+                        "elements": [
+                            {"textRun": {"content": "\nAnother line"}}
+                        ]
+                    }
+                }
             ]
         }
     }
 
-    content = main.extract_content(docs_service, "doc1")
+    content = main.extract_content(docs_service, "doc123")
     assert content == "Hello World\nAnother line"
-    mock_logger.info.assert_called_with("Extracting content from document ID: doc1")
+    mock_logger.info.assert_called_with("Extracting content from document ID: doc123")
 
-#-------------------------------------------------
-# generate_report のテスト例
-#-------------------------------------------------
+
 @patch("main.logger")
 @patch("openai.ChatCompletion.create")
 def test_generate_report(mock_chat_completion, mock_logger, mock_env):
-    # ChatCompletion.create のモック
+    """
+    generate_report() が OpenAI API からの応答を正しく処理するか確認。
+    """
+    # ChatCompletion.create のモック返り値
     mock_chat_completion.return_value = {
         "choices": [
-            {"message": {"content": "This is a fake report content."}}
+            {"message": {"content": "AI-generated report content."}}
         ]
     }
 
-    report = main.generate_report("Sample text")
-    assert "fake report content" in report
+    sample_input = "Sample daily records."
+    report = main.generate_report(sample_input, model="gpt-4")
 
+    assert "AI-generated report content." in report
     mock_chat_completion.assert_called_once()
-    mock_logger.error.assert_not_called()  # エラーが出ていないこと
+    mock_logger.error.assert_not_called()
 
-#-------------------------------------------------
-# create_report_document のテスト例
-#-------------------------------------------------
+
 @patch("main.logger")
 def test_create_report_document(mock_logger, mock_env):
+    """
+    create_report_document() が Drive API でドキュメントを生成し、
+    Docs API で本文を書き込む呼び出しをしているか確認。
+    """
     drive_service = MagicMock()
     docs_service = MagicMock()
 
-    # Drive API の返り値をモック
-    drive_service.files().create().execute.return_value = {"id": "new_doc_id"}
+    # drive_service.files().create().execute() の戻り値を設定
+    create_mock = drive_service.files().create.return_value
+    create_mock.execute.return_value = {"id": "new_doc_id"}
 
-    main.create_report_document(drive_service, docs_service, "report_folder", "Test Report", "Report Content")
+    main.create_report_document(
+        drive_service,
+        docs_service,
+        "report_folder",
+        "Test Report",
+        "Report Content"
+    )
 
-    # Drive API の呼び出しを検証
-    drive_service.files().create.assert_called_once()
-    docs_service.documents().batchUpdate.assert_called_once()
+    # 1) create() の呼び出し
+    drive_service.files().create.assert_called_once_with(
+        body={
+            'name': 'Test Report',
+            'mimeType': 'application/vnd.google-apps.document',
+            'parents': ['report_folder']
+        },
+        fields='id'
+    )
+
+    # 2) create() の戻り値 => execute()
+    create_mock.execute.assert_called_once()
+
+    # 3) batchUpdate の呼び出し
+    docs_service.documents().batchUpdate.assert_called_once_with(
+        documentId='new_doc_id',
+        body={
+            'requests': [
+                {
+                    'insertText': {
+                        'location': {'index': 1},
+                        'text': 'Report Content'
+                    }
+                }
+            ]
+        }
+    )
 
     mock_logger.info.assert_any_call("Creating new report document: Test Report")
     mock_logger.info.assert_any_call("Report document created successfully (ID=new_doc_id).")
 
-#-------------------------------------------------
-# run_process のテスト例
-#-------------------------------------------------
-@patch("main.get_google_service")
-@patch("main.fetch_documents")
-@patch("main.extract_content")
-@patch("main.generate_report")
-@patch("main.create_report_document")
+
 @patch("main.logger")
-def test_run_process(mock_logger,
-                     mock_create_report_document,
-                     mock_generate_report,
-                     mock_extract_content,
-                     mock_fetch_documents,
-                     mock_get_google_service,
-                     mock_env):
-    # それぞれのモックを設定
+@patch("main.create_report_document")
+@patch("main.generate_report")
+@patch("main.extract_content")
+@patch("main.fetch_documents")
+@patch("main.get_google_service")
+def test_run_process(
+    mock_get_google_service,
+    mock_fetch_documents,
+    mock_extract_content,
+    mock_generate_report,
+    mock_create_report_document,
+    mock_logger,
+    mock_env
+):
+    """
+    run_process() が各関数を正しく呼び出し、フローを完了するか確認。
+    """
+    # mock たちの設定
     drive_service_mock = MagicMock()
     docs_service_mock = MagicMock()
 
+    # get_google_service の返り値を差し替え (順番に呼ばれる)
     mock_get_google_service.side_effect = [drive_service_mock, docs_service_mock]
 
     # fetch_documents の返り値
     mock_fetch_documents.return_value = [
-        {"id": "doc1", "name": "2024年01月02日水曜日"}
+        {"id": "docA", "name": "2024年01月02日"},
+        {"id": "docB", "name": "2024年01月03日"}
     ]
+
     # extract_content の返り値
-    mock_extract_content.return_value = "Some doc content"
+    mock_extract_content.side_effect = ["ContentA", "ContentB"]
+
     # generate_report の返り値
-    mock_generate_report.return_value = "Final Report Content"
+    mock_generate_report.return_value = "Final Report"
 
     start_date = datetime(2024, 1, 1)
-    end_date = datetime(2024, 1, 3)
-    folder_id = "folder123"
-    report_folder_id = "report123"
+    end_date = datetime(2024, 1, 7)
+    folder_id = "folderXYZ"
+    report_folder_id = "folderOUT"
 
     main.run_process(start_date, end_date, folder_id, report_folder_id)
 
-    # アサーション
+    # get_google_service は drive と docs を呼び出しているはず
     mock_get_google_service.assert_any_call("drive", "v3")
     mock_get_google_service.assert_any_call("docs", "v1")
+
+    # fetch_documents が呼ばれ、2つの doc を返す
     mock_fetch_documents.assert_called_once_with(drive_service_mock, folder_id, start_date, end_date)
-    mock_extract_content.assert_called_once_with(docs_service_mock, "doc1")
-    mock_generate_report.assert_called_once_with("Some doc content\n")
+    assert mock_fetch_documents.return_value == [
+        {"id": "docA", "name": "2024年01月02日"},
+        {"id": "docB", "name": "2024年01月03日"}
+    ]
+
+    # extract_content は docA, docB を順番に呼び出す
+    mock_extract_content.assert_any_call(docs_service_mock, "docA")
+    mock_extract_content.assert_any_call(docs_service_mock, "docB")
+
+    # generate_report は ContentA + \n + ContentB で呼ばれる
+    mock_generate_report.assert_called_once_with("ContentA\nContentB\n")
+
+    # create_report_document の呼び出し
     mock_create_report_document.assert_called_once_with(
-        drive_service_mock, docs_service_mock, report_folder_id,
-        "レポート_2024-01-01_2024-01-03", "Final Report Content"
+        drive_service_mock,
+        docs_service_mock,
+        report_folder_id,
+        "レポート_2024-01-01_2024-01-07",
+        "Final Report"
     )
 
+    # ログメッセージのチェック
     mock_logger.info.assert_any_call("No documents found in the specified date range.") if not mock_fetch_documents else None
