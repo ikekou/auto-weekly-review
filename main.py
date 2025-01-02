@@ -128,7 +128,7 @@ def generate_report(all_text):
         " daily notes. Your goal is to help the user uncover hidden aspects or patterns"
         " they may not notice, and guide them to a concrete 1-week plan to address"
         " opportunities or challenges. Provide thoughtful insights and constructive,"
-        " realistic next steps."
+        " realistic next steps.レポートの出力は必ず日本語にして。"
     )
 
     # --- ユーザープロンプト ---
