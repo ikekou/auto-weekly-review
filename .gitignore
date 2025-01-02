@@ -1,0 +1,25 @@
+# --- 機密情報・トークン類 ---
+credentials.json
+token.json
+.env
+
+# --- バイナリ・キャッシュ類 ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- 仮想環境関連 ---
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --- OS固有の隠しファイル ---
+.DS_Store
+
+# --- ログファイルなど ---
+report_tool.log
+*.log
