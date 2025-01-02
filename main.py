@@ -109,14 +109,29 @@ def generate_report(all_text, model="gpt-4"):
         logger.error("OPENAI_API_KEY is not set.")
         return "Error: OPENAI_API_KEY not configured."
 
+    # システムプロンプト: 
+    #   ChatGPTには英語で考えさせるが、最終的には日本語に翻訳して回答するよう指示。
     system_prompt = (
-        "You are an advanced personal development assistant. "
-        "Help the user gain deeper self-awareness and create practical 1-week action plans."
+        "You are an advanced AI assistant with expertise in psychology, coaching, and behavioral science. "
+        "You will reason in English internally to provide the best possible analysis, insights, and action plans "
+        "for the user's personal development. However, after you finish your internal reasoning in English, "
+        "you must translate your final answer into Japanese before outputting it to the user."
     )
+
+    # ユーザープロンプト:
+    #   ユーザーの記録を踏まえ、最高レベルの分析と提案を日本語で出力するよう要求。
     user_prompt = (
-        "Here is the user's content:\n\n"
+        "以下はユーザーが日々記録している内容です。これを踏まえ、心理学や行動科学、コーチング理論など、"
+        "あなたの専門知識をフル活用して深い分析と洞察を得てください。"
+        "ただし、あなたの内部思考は英語で行い、その結果を日本語に翻訳して出力してください。\n\n"
+        "分析には以下の項目を含めてください:\n"
+        "1. ユーザーの記録から読み取れる主なテーマや傾向\n"
+        "2. 認知や行動上の課題、強みや特徴など\n"
+        "3. 背景要因や隠れたパターンの推測\n"
+        "4. 次の1週間を見据えた具体的なアクションプラン\n\n"
         f"{all_text}\n\n"
-        "Please provide a thorough analysis and a clear one-week action plan."
+        "最終的なレポートは日本語でわかりやすく書いてください。ただし、内部思考は英語で行い、"
+        "その後日本語に翻訳した結果を出力してください。"
     )
 
     try:
