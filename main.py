@@ -2,7 +2,7 @@
 import os
 import re
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from loguru import logger
 from dotenv import load_dotenv
@@ -113,10 +113,8 @@ def generate_report(all_text, model="gpt-4"):
     # システムプロンプト: 
     #   ChatGPTには英語で考えさせるが、最終的には日本語に翻訳して回答するよう指示。
     system_prompt = (
-        "You are an advanced AI assistant with expertise in psychology, coaching, and behavioral science. "
-        "You will reason in English internally to provide the best possible analysis, insights, and action plans "
-        "for the user's personal development. However, after you finish your internal reasoning in English, "
-        "you must translate your final answer into Japanese before outputting it to the user."
+        "あなたは心理学、コーチング、行動科学に精通した高度なAIアシスタントです。"
+        "ユーザーの個人発展のために、最良の分析、洞察、行動計画を提供してください。"
     )
 
     print(all_text)
@@ -264,20 +262,24 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Generate a weekly report from Google Docs using OpenAI.")
-    parser.add_argument("--start", required=True, help="Start date in YYYY-MM-DD")
-    parser.add_argument("--end", required=True, help="End date in YYYY-MM-DD")
+    parser.add_argument("--start", help="Start date in YYYY-MM-DD")
+    parser.add_argument("--end", help="End date in YYYY-MM-DD")
     parser.add_argument("--folder-id", required=True, help="Google Drive folder ID to read docs from")
     parser.add_argument("--report-folder-id", required=True, help="Google Drive folder ID to save the report")
 
     args = parser.parse_args()
 
-    try:
-        start_date = datetime.strptime(args.start, "%Y-%m-%d")
-        end_date = datetime.strptime(args.end, "%Y-%m-%d")
-    except ValueError:
-        logger.error("Invalid date format. Use YYYY-MM-DD.")
-        return
-    
+    if args.start and args.end:
+        try:
+            start_date = datetime.strptime(args.start, "%Y-%m-%d")
+            end_date = datetime.strptime(args.end, "%Y-%m-%d")
+        except ValueError:
+            logger.error("Invalid date format. Use YYYY-MM-DD.")
+            return
+    else:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=7)
+
     run_process(start_date, end_date, args.folder_id, args.report_folder_id)
 
 if __name__ == "__main__":
