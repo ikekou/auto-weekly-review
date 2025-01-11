@@ -1,27 +1,3 @@
-以下は、同じディレクトリ内に `README.md` ファイルを作成するシェルスクリプト（`init_readme.sh` など）です。  
-実行すると、`README.md` が新規作成され、すでに存在する場合は上書きしません。
-
----
-
-```bash
-#!/usr/bin/env bash
-
-# ファイル名: init_readme.sh
-# 実行方法:
-#   chmod +x init_readme.sh
-#   ./init_readme.sh
-#
-# このスクリプトを実行すると、README.md が作成されます。
-# 既にファイルが存在する場合は中断します。
-
-README_FILE="README.md"
-
-if [ -f "$README_FILE" ]; then
-  echo "Error: $README_FILE already exists. Aborting to avoid overwriting."
-  exit 1
-fi
-
-cat << 'EOF' > "$README_FILE"
 # auto-reviewer
 
 ## Overview
