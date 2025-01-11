@@ -264,8 +264,8 @@ def main():
     parser = argparse.ArgumentParser(description="Generate a weekly report from Google Docs using OpenAI.")
     parser.add_argument("--start", help="Start date in YYYY-MM-DD")
     parser.add_argument("--end", help="End date in YYYY-MM-DD")
-    parser.add_argument("--folder-id", required=True, help="Google Drive folder ID to read docs from")
-    parser.add_argument("--report-folder-id", required=True, help="Google Drive folder ID to save the report")
+    parser.add_argument("--folder-id", help="Google Drive folder ID to read docs from")
+    parser.add_argument("--report-folder-id", help="Google Drive folder ID to save the report")
 
     args = parser.parse_args()
 
@@ -280,7 +280,14 @@ def main():
         end_date = datetime.now()
         start_date = end_date - timedelta(days=7)
 
-    run_process(start_date, end_date, args.folder_id, args.report_folder_id)
+    folder_id = args.folder_id or os.getenv("GOOGLE_DRIVE_FOLDER_ID")
+    report_folder_id = args.report_folder_id or os.getenv("GOOGLE_REPORT_FOLDER_ID")
+
+    if not folder_id or not report_folder_id:
+        logger.error("Folder ID and Report Folder ID must be provided either as arguments or in the .env file.")
+        return
+
+    run_process(start_date, end_date, folder_id, report_folder_id)
 
 if __name__ == "__main__":
     main()
