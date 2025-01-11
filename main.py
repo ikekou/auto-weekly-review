@@ -117,8 +117,6 @@ def generate_report(all_text, model="gpt-4"):
         "ユーザーの個人発展のために、最良の分析、洞察、行動計画を提供してください。"
     )
 
-    print(all_text)
-
     # ユーザープロンプト:
     #   ユーザーの記録を踏まえ、最高レベルの分析と提案を日本語で出力するよう要求。
     user_prompt = (
@@ -187,8 +185,6 @@ def generate_report(all_text, model="gpt-4"):
     + "私の日記に含まれる個人情報や機密情報には十分に配慮し、第三者に漏洩しないようお願いいたします。\n"
     )
 
-    print(user_prompt)
-
     try:
         response = openai.ChatCompletion.create(
             model=model,
@@ -254,7 +250,6 @@ def run_process(start_date, end_date, folder_id, report_folder_id):
         combined_text += extract_content(docs_service, doc_id) + "\n"
 
     report_content = generate_report(combined_text,'gpt-4o')
-    # print(report_content)
     report_name = f"レポート_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}"
     create_report_document(drive_service, docs_service, report_folder_id, report_name, report_content)
 
