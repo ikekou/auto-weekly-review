@@ -53,12 +53,21 @@ auto-reviewer は、指定期間内の Google Document を取得し、OpenAI の
    - ダウンロードした `credentials.json` を本プロジェクト直下に配置し、`.gitignore` で管理外に。
 5. **.env ファイルを作成**  
    - OpenAI の API キーを設定します（例: `OPENAI_API_KEY=sk-xxxxxxxxxxxxxx`）。  
+   - Google Drive フォルダ ID を設定します（例: `GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id_here`）。
+   - レポートを保存する Google Drive フォルダ ID を設定します（例: `GOOGLE_REPORT_FOLDER_ID=your_google_report_folder_id_here`）。
    - `.gitignore` によりコミットから除外されます。
 6. **Google Drive/Docs API を有効化**  
    - Google Cloud Console で「Drive API」「Docs API」を有効にしてください。
 
 ## Usage
 以下はコマンド例です:
+
+最小限のコマンド例（.envファイルから設定を取得し、日付は過去1週間分を自動設定）:
+```bash
+python main.py
+```
+
+オプションを指定する例:
 ```bash
 python main.py \
   --start 2024-01-01 \
@@ -67,14 +76,24 @@ python main.py \
   --report-folder-id 9Z8Y7X6W5V4U3T2
 ```
 - `--start`, `--end` : レポート対象期間 (YYYY-MM-DD)
-- `--folder-id` : 対象のGoogle DriveフォルダID（入力用）
-- `--report-folder-id` : レポートを保存するGoogle DriveフォルダID（出力用）
+- `--folder-id` : 対象のGoogle DriveフォルダID（入力用）省略時は.envから取得
+- `--report-folder-id` : レポートを保存するGoogle DriveフォルダID（出力用）省略時は.envから取得
 
 初回実行時には OAuth 認証画面がブラウザで開きます。  
 認証が成功すると `token.json` が生成され、2回目以降は自動的に再認証します。
 
-## License
-特に指定がなければ、[MIT License](LICENSE) や適宜ライセンスを設定してください。
+## .env ファイルの例
+```properties
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+OPENAI_API_KEY=your_openai_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
+GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id_here
+GOOGLE_REPORT_FOLDER_ID=your_google_report_folder_id_here
+```
+
+## ライセンス
+このプロジェクトは [MIT ライセンス](LICENSE) のもとでライセンスされています。
 
 ## Notes
 - `.env`, `credentials.json`, `token.json` など、機密性の高いファイルはリポジトリに含めないようご注意ください。
