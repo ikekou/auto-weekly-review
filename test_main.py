@@ -226,3 +226,7 @@ def test_run_process(
 
     # ログメッセージのチェック
     mock_logger.info.assert_any_call("No documents found in the specified date range.") if not mock_fetch_documents else None
+
+if __name__ == "__main__":
+    print("Running tests...")
+    pytest.main()
