@@ -1,5 +1,3 @@
-# auto-reviewer
-
 ## Overview
 auto-reviewer は、指定期間内の Google Document を取得し、OpenAI の API（GPT-4 等）を使用してレポートを生成する CLI ツールです。  
 ユーザーが記録した文章から自己理解を深めるための洞察を得たり、翌週の行動プランを検討するのに役立ちます。
