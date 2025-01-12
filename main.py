@@ -3,6 +3,7 @@ import os
 import re
 import argparse
 from datetime import datetime, timedelta
+import webbrowser
 
 from loguru import logger
 from dotenv import load_dotenv
@@ -225,7 +226,9 @@ def create_report_document(drive_service, docs_service, report_folder_id, report
         ]
         docs_service.documents().batchUpdate(documentId=doc_id, body={"requests": requests}).execute()
         logger.info(f"Report document created successfully (ID={doc_id}).")
-        print(f"Report URL: https://docs.google.com/document/d/{doc_id}/edit")
+        report_url = f"https://docs.google.com/document/d/{doc_id}/edit"
+        print(f"Report URL: {report_url}")
+        webbrowser.open(report_url)
     except HttpError as err:
         logger.error(f"Error creating/updating document: {err}")
 
