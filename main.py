@@ -233,9 +233,9 @@ def run_process(start_date, end_date, folder_id, report_folder_id):
     main() から分離した実行関数。
     テスト時に、引数を直接指定してロジックを実行しやすくするために分離。
     """
+    print(f"Searching documents from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
     drive_service = get_google_service("drive", "v3")
-
     docs_service = get_google_service("docs", "v1")
 
     documents = fetch_documents(drive_service, folder_id, start_date, end_date)
@@ -283,6 +283,7 @@ def main():
         return
 
     run_process(start_date, end_date, folder_id, report_folder_id)
+    print(f"Report generated for the period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
 if __name__ == "__main__":
     main()
