@@ -225,6 +225,7 @@ def create_report_document(drive_service, docs_service, report_folder_id, report
         ]
         docs_service.documents().batchUpdate(documentId=doc_id, body={"requests": requests}).execute()
         logger.info(f"Report document created successfully (ID={doc_id}).")
+        print(f"Report URL: https://docs.google.com/document/d/{doc_id}/edit")
     except HttpError as err:
         logger.error(f"Error creating/updating document: {err}")
 
